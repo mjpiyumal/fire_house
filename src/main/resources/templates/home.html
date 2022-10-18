@@ -1,0 +1,221 @@
+<!doctype html>
+<html>
+<head>
+    <title>Bookmarks</title>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <!-- jQuery Modal -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-modal/0.9.1/jquery.modal.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-modal/0.9.1/jquery.modal.min.css"/>
+    <style>
+        .button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+        }
+        .modal p {
+            margin: 1em 0;
+        }
+
+        .add_form.modal {
+            border-radius: 0;
+            line-height: 18px;
+            padding: 0;
+            font-family: "Lucida Grande", Verdana, sans-serif;
+        }
+
+        .add_form.modal p {
+            padding: 20px 30px;
+            border-bottom: 1px solid #ddd;
+            margin: 0;
+            background: -webkit-gradient(linear, left bottom, left top, color-stop(0, #eee), color-stop(1, #fff));
+            overflow: hidden;
+        }
+
+        .add_form.modal p:last-child {
+            border: none;
+        }
+
+        .add_form.modal p label {
+            float: left;
+            font-weight: bold;
+            color: #333;
+            font-size: 13px;
+            width: 110px;
+            line-height: 22px;
+        }
+
+        .add_form.modal p input[type="text"],
+        .add_form.modal p input[type="submit"] {
+            font: normal 12px/18px "Lucida Grande", Verdana;
+            padding: 3px;
+            border: 1px solid #ddd;
+            width: 200px;
+        }
+
+        #msg {
+            margin: 10px;
+            padding: 30px;
+            color: #fff;
+            font-size: 18px;
+            font-weight: bold;
+            background: -moz-linear-gradient(top, #2e5764, #1e3d47);
+            background: -webkit-gradient(linear, left bottom, left top, color-stop(0, #1e3d47), color-stop(1, #2e5764));
+        }
+    </style>
+    <script type="text/javascript">
+        $(document).delegate('#addNew', 'click', function (event) {
+            event.preventDefault();
+            $.getJSON('http://localhost:9090/bookmark/getAll', function (json) {
+                var tr = [];
+                for (var i = 0; i < json.length; i++) {
+                    tr.push('<tr>');
+                    tr.push('<td>' + json[i].id + '</td>');
+                    tr.push('<td>' + json[i].name + '</td>');
+                    tr.push('<td>' + json[i].url + '</td>');
+                    tr.push('<td>' + json[i].description + '</td>');
+                    tr.push('<td>' + json[i].status + '</td>');
+                    tr.push('<td>' + json[i].expiry_date + '</td>');
+                    tr.push('<td><button class=\'edit\'>Edit</button>&nbsp;&nbsp;<button class=\'delete\' id=' + json[i].id + '>Delete</button></td>');
+                    tr.push('</tr>');
+                }
+                $('table').append($(tr.join('')));
+            });
+
+            $(document).delegate('#addNew', 'click', function (event) {
+                event.preventDefault();
+
+                $.ajax({
+                    type: "GET",
+                    contentType: "application/json; charset=utf-8",
+                    url: "http://localhost:9090/bookmark",
+                    cache: false,
+                    success: function (result) {
+                        $("#msg").html("<span style='color: green'>Successfully Deleted</span>");
+                        window.setTimeout(function () {
+                            location.reload()
+                        }, 1000)
+                    },
+                    error: function (err) {
+                        $("#msg").html("<span style='color: red'>Name is required</span>");
+                    }
+                });
+            });
+
+            $(document).delegate('.delete', 'click', function () {
+                if (confirm('Do you really want to delete record?')) {
+                    var id = $(this).attr('id');
+                    var parent = $(this).parent().parent();
+                    $.ajax({
+                        type: "DELETE",
+                        url: "http://localhost:9090/bookmark/" + id,
+                        cache: false,
+                        success: function () {
+                            parent.fadeOut('slow', function () {
+                                $(this).remove();
+                            });
+                            location.reload(true)
+                        },
+                        error: function () {
+                            $('#err').html('<span style=\'color:red; font-weight: bold; font-size: 30px;\'>Error deleting record').fadeIn().fadeOut(4000, function () {
+                                $(this).remove();
+                            });
+                        }
+                    });
+                }
+            });
+
+            $(document).delegate('.edit', 'click', function () {
+                var parent = $(this).parent().parent();
+
+                var id = parent.children("td:nth-child(1)");
+                var name = parent.children("td:nth-child(2)");
+                var url = parent.children("td:nth-child(3)");
+                var description = parent.children("td:nth-child(4)");
+                var status = parent.children("td:nth-child(5)");
+                var expiry_date = parent.children("td:nth-child(6)");
+                var buttons = parent.children("td:nth-child(7)");
+
+                name.html("<input type='text' id='txtName' value='" + name.html() + "'/>");
+                url.html("<input type='text' id='txtUrl' value='" + url.html() + "'/>");
+                description.html("<input type='text' id='txtDescription' value='" + description.html() + "'/>");
+                status.html("<input type='text' id='txtStatus' value='" + status.html() + "'/>");
+                expiry_date.html("<input type='text' id='txtEdate' value='" + expiry_date.html() + "'/>");
+                buttons.html("<button id='save'>Save</button>&nbsp;&nbsp;<button class='delete' id='" + id.html() + "'>Delete</button>");
+            });
+
+            $(document).delegate('#save', 'click', function () {
+                var parent = $(this).parent().parent();
+
+                var id = parent.children("td:nth-child(1)");
+                var name = parent.children("td:nth-child(2)");
+                var url = parent.children("td:nth-child(3)");
+                var description = parent.children("td:nth-child(4)");
+                var status = parent.children("td:nth-child(5)");
+                var expiry_date = parent.children("td:nth-child(6)");
+                var buttons = parent.children("td:nth-child(7)");
+                const list = {
+                    'id': id.html(), 'name': name.children("input[type=text]").val(),
+                    'id': id.html(), 'url': url.children("input[type=text]").val(),
+                    'id': id.html(), 'description': description.children("input[type=text]").val(),
+                    'id': id.html(), 'status': status.children("input[type=text]").val(),
+                    'id': id.html(), 'expiry_date': expiry_date.children("input[type=text]").val()
+                }
+
+                $.ajax({
+                    type: "POST",
+                    contentType: "application/json; charset=utf-8",
+                    dataType: 'text',
+                    url: "http://localhost:9090/bookmark/update",
+                    data: JSON.stringify(list),
+                    cache: false,
+                    success: function () {
+                        name.html(name.children("input[type=text]").val());
+                        url.html(url.children("input[type=text]").val());
+                        description.html(description.children("input[type=text]").val());
+                        status.html(status.children("input[type=text]").val());
+                        expiry_date.html(expiry_date.children("input[type=text]").val());
+                        buttons.html("<button class='edit' id='" + id.html() + "'>Edit</button>&nbsp;&nbsp;<button class='delete' id='" + id.html() + "'>Delete</button>");
+                    },
+                    error: function () {
+                        $('#err').html('<span style=\'color:red; font-weight: bold; font-size: 30px;\'>Error updating record').fadeIn().fadeOut(4000, function () {
+                            $(this).remove();
+                        });
+                    }
+                });
+            });
+
+        });
+    </script>
+</head>
+<body>
+
+<h2>Bookmark Table</h2>
+
+<input class="button" type="submit" id="addNew" value="Create">
+
+<br>
+
+<table border="1" cellspacing="0" cellpadding="5">
+    <tr>
+        <th>Id</th>
+        <th>Name</th>
+        <th>Url</th>
+        <th>description</th>
+        <th>status</th>
+        <th>expiry_date</th>
+        <th>Actions</th>
+    </tr>
+</table>
+
+
+
+</body>
+</html>
